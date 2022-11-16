@@ -14,46 +14,151 @@ int timer;
 string process_carrier[30][30];
 int scheduling_policy[5];
 int last_instance;
-struct Process{
+class Process{
+public:
 int id;
 string name;
 int arrival_time;
 int service_time;
 int end_time;
 };
+bool operator<(const Process &p1, const Process &p2){
+if (p1.service_time==p2.service_time){
+return p1.arrival_time>p2.arrival_time;
+}
+else
+return p1.service_time>p2.service_time;
+}
 Process manager[9];
 queue<Process> processes;
 void FCFS(){
 queue<Process> temp=processes;
 queue<Process> container;
-Process*running=NULL;
+Process running;
+running.name="NULL";
 for(int i=0;i<last_instance;i++){
 if(!temp.empty()){
 if(temp.front().arrival_time==i){
 container.push(temp.front());
 temp.pop();}
 }
-if(running==NULL&&!container.empty()){
-running=&container.front();
+if((running.name=="NULL"|| running.service_time==0)&&!container.empty() ){
+running=container.front();
 container.pop();
 }
+
 queue<Process> temp_copy=container;
 while(!temp_copy.empty()){
-Process*p1=&temp_copy.front();
+process_carrier[temp_copy.front().id][i]=".";
 temp_copy.pop();
-process_carrier[p1->id][i]=".";
 }
-if(running!=NULL){
-process_carrier[running->id][i]="*";
-running->service_time--;
-if(running->service_time==0)
-running=NULL;
+if(running.name!="NULL"){
+process_carrier[running.id][i]="*";
+running.service_time--;
 }
 }
 }
-void RR(){}
-void SPN(){}
-void SRT(){}
+void RR(){
+int quantum;
+queue<Process> temp=processes;
+queue<Process> container;
+Process running;
+running.name="NULL";
+for(int i=0;i<last_instance;i++){
+if(!temp.empty()){
+if(temp.front().arrival_time==i){
+container.push(temp.front());
+temp.pop();}
+}
+if(running.name!="NULL"){
+if(running.service_time!=0 && quantum==0){
+container.push(running);
+running.name="NULL";
+}}
+if((running.name=="NULL"|| running.service_time==0)&&!container.empty()){
+quantum=1;
+running=container.front();
+container.pop();
+}
+
+queue<Process> temp_copy=container;
+while(!temp_copy.empty()){
+process_carrier[temp_copy.front().id][i]=".";
+temp_copy.pop();
+}
+if(running.name!="NULL"){
+process_carrier[running.id][i]="*";
+running.service_time--;
+quantum--;
+
+}
+
+}
+}
+void SPN(){
+queue<Process> temp=processes;
+priority_queue<Process> container;
+Process running;
+for(int i=0;i<last_instance;i++){
+if(!temp.empty()){
+if(temp.front().arrival_time==i){
+container.push(temp.front());
+temp.pop();
+}
+}
+if(running.service_time==0&&!container.empty()){
+running=container.top();
+container.pop();
+}
+priority_queue<Process> temp_copy=container;
+while(!temp_copy.empty()){
+process_carrier[temp_copy.top().id][i]=".";
+temp_copy.pop();
+}
+if(running.service_time!=0){
+process_carrier[running.id][i]="*";
+running.service_time--;
+}
+}}
+void SRT(){
+queue<Process> temp=processes;
+priority_queue<Process> container;
+Process running;
+running.name="NULL";
+for(int i=0;i<last_instance;i++){
+if(!temp.empty()){
+if(temp.front().arrival_time==i){
+container.push(temp.front());
+temp.pop();}
+}
+if(running.name!="NULL"){
+if(running.service_time>container.top().service_time){
+container.push(running);
+running=container.top();
+container.pop();
+}}
+
+if(running.name=="NULL"&&!container.empty()){
+running=container.top();
+container.pop();}
+if(running.name!="NULL"){
+if(running.service_time==0){
+running=container.top();
+container.pop();
+}
+}
+priority_queue<Process> temp_copy=container;
+while(!temp_copy.empty()){
+process_carrier[temp_copy.top().id][i]=".";
+temp_copy.pop();
+}
+
+if(running.service_time!=0){
+process_carrier[running.id][i]="*";
+running.service_time--;
+}
+}
+}
 void HRRN(){}
 void FB_1(){}
 void FB_2i(){}
@@ -64,11 +169,14 @@ switch (policy){
 case 1: policy_choice="FCFS";
         FCFS();
         break;
-case 2: RR();
+case 2: policy_choice="RR  ";
+        RR();
         break;
-case 3: SPN();
+case 3: policy_choice="SPN ";
+        SPN();
         break;
-case 4: SRT();
+case 4: policy_choice="STR ";
+        SRT();
         break;
 case 5: HRRN();
         break;
@@ -137,13 +245,7 @@ for (int i=0;i<no_processes;i++){
 	}
 }
 }
-int main()
-{
-string temp;
-cin >> visual_choice;
-cin >> policies;
-cin >> last_instance;
-cin >> no_processes;
+void process_parsing(){
 for (int i=0;i<no_processes;i++){
 Process p1;
 p1.id=i;
@@ -159,6 +261,15 @@ p1.service_time=stoi(token);
 manager[i]=p1;
 processes.push(p1);
 }
+}
+int main()
+{
+string temp;
+cin >> visual_choice;
+cin >> policies;
+cin >> last_instance;
+cin >> no_processes;
+process_parsing();
 builder();
 policy_selector(policies);
 trace_printer();
