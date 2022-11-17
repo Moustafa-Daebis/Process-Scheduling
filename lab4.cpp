@@ -4,15 +4,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <vector>
 using namespace std;
-string processlist[30];
+vector<string> processlist;
 int no_processes;
 string visual_choice;                       //trace or stats
 string policy_choice;
 int policies;
-int timer;
-string process_carrier[30][30];            //used to store proccess status at certain time to draw el trace
-int scheduling_policy[5];                  //used to store the different proccessing policies to perform
+vector<vector<string>> process_trace_mapper;       //used to store proccess status at certain time to draw el trace
+vector <int> scheduling_policy;                  //used to store the different proccessing policies to perform
 int last_instance;                         // last time instance in the trace map
 class Process{
     public:
@@ -29,7 +29,7 @@ if (p1.service_time==p2.service_time){
 else
     return p1.service_time>p2.service_time;
 }
-Process manager[9];
+vector<int> end_times;
 queue<Process> processes;
 void FCFS(){
     queue<Process> temp=processes;            // copy of proccess in a queue in order to insert them to ready queue at their time
@@ -50,12 +50,13 @@ void FCFS(){
 
         queue<Process> temp_copy=container;                                       // processes in the ready queue are waiting
         while(!temp_copy.empty()){
-            process_carrier[temp_copy.front().id][i]=".";                         // simulating waiting in the 2d array
+            process_trace_mapper[temp_copy.front().id][i]=".";                         // simulating waiting in the 2d array
             temp_copy.pop();
         }
         if(running.name!="NULL"){                                                 //simulating running
-            process_carrier[running.id][i]="*";
+            process_trace_mapper[running.id][i]="*";
             running.service_time--;                                          // service time decrementation
+
         }
     }
 }
@@ -86,11 +87,11 @@ void RR(){
 
         queue<Process> temp_copy=container;
         while(!temp_copy.empty()){
-            process_carrier[temp_copy.front().id][i]=".";
+            process_trace_mapper[temp_copy.front().id][i]=".";
             temp_copy.pop();
         }
         if(running.name!="NULL"){
-            process_carrier[running.id][i]="*";
+            process_trace_mapper[running.id][i]="*";
             running.service_time--;
             quantum--;
         }
@@ -114,11 +115,11 @@ void SPN(){
         }
         priority_queue<Process> temp_copy=container;
         while(!temp_copy.empty()){
-            process_carrier[temp_copy.top().id][i]=".";
+            process_trace_mapper[temp_copy.top().id][i]=".";
             temp_copy.pop();
         }
         if(running.service_time!=0){
-            process_carrier[running.id][i]="*";
+            process_trace_mapper[running.id][i]="*";
             running.service_time--;
         }
     }
@@ -150,12 +151,12 @@ void SRT(){
 
         priority_queue<Process> temp_copy=container;
         while(!temp_copy.empty()){
-            process_carrier[temp_copy.top().id][i]=".";
+            process_trace_mapper[temp_copy.top().id][i]=".";
             temp_copy.pop();
         }
 
         if(running.service_time!=0){
-            process_carrier[running.id][i]="*";
+            process_trace_mapper[running.id][i]="*";
             running.service_time--;
         }
     }
@@ -192,7 +193,15 @@ switch (policy){
 void newline(){
     cout << endl;
 }
+void stats_printer(){
+    cout << policy_choice << endl;
+    for (int i=0;i<6;i++){
+        for (int j=0;j<no_processes;j++){
 
+
+        }
+    }
+}
 void trace_printer(){
     string intial_space="------";
     cout << policy_choice;
@@ -215,7 +224,7 @@ void trace_printer(){
     }
     newline();
     for (int i=0;i<no_processes;i++){                      //printer for main table row
-        string test=processlist[i];
+        string test=processlist.at(i);
         cout << test;
         int visual_choice_space=test.length();
         for (int k=visual_choice_space;k<6;k++){          //space after proccess name
@@ -227,7 +236,7 @@ void trace_printer(){
                 cout << " ";                             //space after row
                 break;
             }
-            cout << process_carrier[i][j];              //printer for proccess status (* for running " " not ready . for waiting)
+            cout << process_trace_mapper[i][j];              //printer for proccess status (* for running " " not ready . for waiting)
         }
         newline();
     }
@@ -240,9 +249,12 @@ void trace_printer(){
     }
 void builder(){                                         //builder that builds 2d array for storing process status at certain time
     for (int i=0;i<no_processes;i++){
+        vector <string>row_info;
         for(int j=0;j<last_instance+1;j++){
-            process_carrier[i][j]=" ";
+            row_info.push_back(" ");
         }
+        process_trace_mapper.push_back(row_info);
+        row_info.clear();
     }
 }
 void process_parsing(){                                 //tokenistion  of procces from input textfile
@@ -253,12 +265,11 @@ void process_parsing(){                                 //tokenistion  of procce
         cin >> temp;
         char* token = strtok(temp,",");
         p1.name=token;
-        processlist[i]=token;
+        processlist.push_back(token);
         token = strtok(NULL, ",");
         p1.arrival_time=stoi(token);
         token = strtok(NULL, ",");
         p1.service_time=stoi(token);
-        manager[i]=p1;
         processes.push(p1);
     }
 }
