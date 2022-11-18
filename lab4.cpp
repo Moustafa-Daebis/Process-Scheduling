@@ -5,32 +5,49 @@
 #include <fcntl.h>
 #include <string.h>
 #include <vector>
+#include <algorithm>
+#include <bits/stdc++.h>
+#include <string>
 using namespace std;
 vector<string> processlist;
 int no_processes;
+int second_parameter;
 string visual_choice;                       //trace or stats
 string policy_choice;
-int policies;
-vector<vector<string>> process_trace_mapper;       //used to store proccess status at certain time to draw el trace
+vector<vector<int>> policies;
+vector<vector<string>> process_trace_mapper;      //used to store proccess status at certain time to draw el trace
 vector <int> scheduling_policy;                  //used to store the different proccessing policies to perform
-int last_instance;                         // last time instance in the trace map
+int last_instance;                              // last time instance in the trace map
 class Process{
     public:
         int id;
         string name;
         int arrival_time;
         int service_time;
+        int wait_time=0;
         int end_time;
 };
-bool operator<(const Process &p1, const Process &p2){    //used for priority_queue in order to enter class Process instances
-if (p1.service_time==p2.service_time){
-    return p1.arrival_time>p2.arrival_time;
-}
-else
-    return p1.service_time>p2.service_time;
-}
-vector<int> end_times;
 queue<Process> processes;
+
+bool operator<(const Process &p1, const Process &p2){    //used for priority_queue in order to enter class Process instances
+
+    if (p1.service_time==p2.service_time){
+        return p1.arrival_time>p2.arrival_time;
+    }
+    else
+        return p1.service_time>p2.service_time;
+}
+
+
+vector<Process> sorter(vector<Process> vec){
+sort(vec.begin(),vec.end(), []( Process &p1,  Process &p2){
+                    if(((p1.wait_time+p1.service_time)/p1.service_time)==((p2.wait_time+p2.service_time)/p2.service_time))
+                    return p1.service_time<p2.service_time;
+                    else
+                    return ((float)(p1.wait_time+p1.service_time)/(float)p1.service_time)>((float)(p2.wait_time+p2.service_time)/(float)p2.service_time);
+});
+return vec;
+}
 void FCFS(){
     queue<Process> temp=processes;            // copy of proccess in a queue in order to insert them to ready queue at their time
     queue<Process> container;                  //queue used for the scheduling policy
@@ -61,7 +78,7 @@ void FCFS(){
     }
 }
 void RR(){
-    int quantum;
+    int quantum=second_parameter;
     queue<Process> temp=processes;
     queue<Process> container;
     Process running;
@@ -80,7 +97,7 @@ void RR(){
             }
         }
         if((running.name=="NULL"|| running.service_time==0)&&!container.empty()){
-            quantum=1;
+            quantum=second_parameter;
             running=container.front();
             container.pop();
         }
@@ -161,7 +178,34 @@ void SRT(){
         }
     }
 }
-void HRRN(){}
+void HRRN(){
+    queue<Process> temp=processes;
+    vector<Process> container;
+    Process running;
+    for(int i=0;i<last_instance;i++){
+        if(!temp.empty()){
+            if(temp.front().arrival_time==i){
+                container.push_back(temp.front());
+                 container=sorter(container);
+                 temp.pop();
+            }
+        }
+        if(running.service_time==0&&container.capacity()!=0){
+        container=sorter(container);
+            running=container.at(0);
+            container.erase(container.begin());
+           container=sorter(container);
+        }
+        for(int j=0;j<container.size();++j){
+            process_trace_mapper[container.at(j).id][i]=".";
+            container.at(j).wait_time++;
+        }
+        container=sorter(container);
+        if(running.service_time!=0){
+            process_trace_mapper[running.id][i]="*";
+            running.service_time--;
+        }
+    }}
 void FB_1(){}
 void FB_2i(){}
 void Aging(){}
@@ -171,7 +215,8 @@ switch (policy){
     case 1: policy_choice="FCFS";
             FCFS();
             break;
-    case 2: policy_choice="RR  ";
+    case 2: policy_choice="RR-";
+            policy_choice.append(to_string(second_parameter));
             RR();
             break;
     case 3: policy_choice="SPN ";
@@ -180,7 +225,8 @@ switch (policy){
     case 4: policy_choice="STR ";
             SRT();
             break;
-    case 5: HRRN();
+    case 5: policy_choice="HRRN";
+            HRRN();
             break;
     case 6: FB_1();
             break;
@@ -194,13 +240,7 @@ void newline(){
     cout << endl;
 }
 void stats_printer(){
-    cout << policy_choice << endl;
-    for (int i=0;i<6;i++){
-        for (int j=0;j<no_processes;j++){
 
-
-        }
-    }
 }
 void trace_printer(){
     string intial_space="------";
@@ -273,16 +313,43 @@ void process_parsing(){                                 //tokenistion  of procce
         processes.push(p1);
     }
 }
+void policies_pharsing(){
+    string temp;
+    cin >> temp;
+    stringstream line(temp);
+    string token;
+    string innertoken;
+    while(getline(line,token,',')){
+        vector<int> temp;
+        stringstream innerline(token);
+        getline(innerline,innertoken,'-');
+        if (token==innertoken){
+            temp.push_back(stoi(token));
+        }
+        else{
+            temp.push_back(stoi(innertoken));
+            getline(innerline,innertoken,'-');
+            temp.push_back(stoi(innertoken));
+            }
+        policies.push_back(temp);
+    }
+}
 int main()
 {
-string temp;
-cin >> visual_choice;
-cin >> policies;
-cin >> last_instance;
-cin >> no_processes;
-process_parsing();
-builder();
-policy_selector(policies);
-trace_printer();
+    string temp;
+    cin >> visual_choice;
+    policies_pharsing();
+    cin >> last_instance;
+    cin >> no_processes;
+    process_parsing();
+    for(int i=0;i<policies.size();i++){
+        process_trace_mapper.clear();
+        builder();
+        if(policies[i][0]==2 || policies[i][0]==7)
+            second_parameter=policies[i][1];
+        policy_selector(policies[i][0]);
+        trace_printer();
+    }
+
     return 0;
 }
