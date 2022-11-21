@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <bits/stdc++.h>
 #include <string>
+#include <math.h>
 using namespace std;
 vector<string> processlist;
 int no_processes;
@@ -15,6 +16,7 @@ int second_parameter;
 string visual_choice;                       //trace or stats
 string policy_choice;
 vector<vector<int>> policies;
+vector<int>finish_times;
 vector<vector<string>> process_trace_mapper;      //used to store proccess status at certain time to draw el trace
 vector <int> scheduling_policy;                  //used to store the different proccessing policies to perform
 int last_instance;                              // last time instance in the trace map
@@ -28,7 +30,7 @@ class Process{
         int end_time;
 };
 queue<Process> processes;
-
+vector<Process> info_processes;
 bool operator<(const Process &p1, const Process &p2){    //used for priority_queue in order to enter class Process instances
 
     if (p1.service_time==p2.service_time){
@@ -70,10 +72,11 @@ void FCFS(){
             process_trace_mapper[temp_copy.front().id][i]=".";                         // simulating waiting in the 2d array
             temp_copy.pop();
         }
-        if(running.name!="NULL"){                                                 //simulating running
+        if(running.name!="NULL"&&running.service_time!=0){                                                 //simulating running
             process_trace_mapper[running.id][i]="*";
             running.service_time--;                                          // service time decrementation
-
+            if(running.service_time==0)
+                finish_times.at(running.id)=i+1;
         }
     }
 }
@@ -107,10 +110,12 @@ void RR(){
             process_trace_mapper[temp_copy.front().id][i]=".";
             temp_copy.pop();
         }
-        if(running.name!="NULL"){
+        if(running.name!="NULL"&&running.service_time!=0){
             process_trace_mapper[running.id][i]="*";
             running.service_time--;
             quantum--;
+            if(running.service_time==0)
+               finish_times.at(running.id)=i+1;
         }
 
     }
@@ -138,6 +143,8 @@ void SPN(){
         if(running.service_time!=0){
             process_trace_mapper[running.id][i]="*";
             running.service_time--;
+            if(running.service_time==0)
+                finish_times.at(running.id)=i+1;
         }
     }
 }
@@ -175,6 +182,8 @@ void SRT(){
         if(running.service_time!=0){
             process_trace_mapper[running.id][i]="*";
             running.service_time--;
+            if(running.service_time==0)
+                 finish_times.at(running.id)=i+1;
         }
     }
 }
@@ -204,6 +213,8 @@ void HRRN(){
         if(running.service_time!=0){
             process_trace_mapper[running.id][i]="*";
             running.service_time--;
+            if(running.service_time==0)
+                finish_times.at(running.id)=i+1;
         }
     }}
 void FB_1(){}
@@ -219,10 +230,10 @@ switch (policy){
             policy_choice.append(to_string(second_parameter));
             RR();
             break;
-    case 3: policy_choice="SPN ";
+    case 3: policy_choice="SPN";
             SPN();
             break;
-    case 4: policy_choice="STR ";
+    case 4: policy_choice="SRT";
             SRT();
             break;
     case 5: policy_choice="HRRN";
@@ -240,13 +251,91 @@ void newline(){
     cout << endl;
 }
 void stats_printer(){
-
+    cout << policy_choice << endl;
+    cout << "Process    |";
+    for (int i=0;i<no_processes;i++){
+        cout << "  "<<processlist.at(i)<< "  |";
+    }
+    newline();
+    cout << "Arrival    |";
+    for (int i=0;i<no_processes;i++){
+        string number=to_string(info_processes.at(i).arrival_time);
+        int length=number.length();
+        for(int j=2;j>=length;j--)
+            cout<<" ";
+        cout<<info_processes.at(i).arrival_time;
+        cout<< "  |";
+    }
+    newline();
+    cout << "Service    |";
+    for (int i=0;i<no_processes;i++){
+        string number=to_string(info_processes.at(i).service_time);
+        int length=number.length();
+        for(int j=2;j>=length;j--)
+            cout<<" ";
+        cout<<info_processes.at(i).service_time;
+        cout<< "  |";
+    }
+    cout<< " Mean|";
+    newline();
+    cout << "Finish     |";
+    for (int i=0;i<no_processes;i++){
+        string number=to_string(finish_times.at(i));
+        int length=number.length();
+        for(int j=2;j>=length;j--)
+            cout<<" ";
+        cout<<finish_times.at(i);
+        cout<< "  |";
+    }
+    cout<< "-----|";
+    newline();
+    cout << "Turnaround |";
+    float total_turnaround=0;
+    for (int i=0;i<no_processes;i++){
+        int turnaround_time=finish_times.at(i)-info_processes.at(i).arrival_time;
+        total_turnaround+=turnaround_time;
+        string number=to_string(turnaround_time);
+        int length=number.length();
+        for(int j=2;j>=length;j--)
+            cout<<" ";
+        cout<<turnaround_time;
+        cout<< "  |";
+    }
+    float avg=((float)(total_turnaround)/(float)(no_processes));
+    string number=to_string((int)avg);
+    int length=number.length();
+    for(int j=2;j>length;j--)
+        cout<<" ";
+    cout <<fixed<<setprecision(2)<<avg;
+    cout<< "|";
+    newline();
+    cout << "NormTurn   |";
+    float total_normalised=0;
+    for (int i=0;i<no_processes;i++){
+        float normalised_time=((float)(finish_times.at(i)-info_processes.at(i).arrival_time))/(float)info_processes.at(i).service_time;
+        total_normalised+=normalised_time;
+        string number=to_string((int)normalised_time);
+        int length=number.length();
+        for(int j=2;j>length;j--)
+            cout<<" ";
+        cout<<fixed<<setprecision(2)<<normalised_time;
+        cout<< "|";
+    }
+    avg=((float)(total_normalised)/(float)(no_processes));
+    number=to_string((int)avg);
+    length=number.length();
+    for(int j=2;j>length;j--)
+        cout<<" ";
+    cout <<fixed<<setprecision(2)<<avg;
+    cout<< "|";
+    newline();
+    newline();
 }
 void trace_printer(){
     string intial_space="------";
     cout << policy_choice;
-    int visual_choice_space=visual_choice.length();
-    for (int i=visual_choice_space;i<=6;i++){
+    int visual_choice_space=policy_choice.length();
+    for (int i=0;i<6-visual_choice_space;i++){
         cout << " ";
     }
     for (int i=0;i<=last_instance;i++){        // printer for time sequence of trace
@@ -311,6 +400,7 @@ void process_parsing(){                                 //tokenistion  of procce
         token = strtok(NULL, ",");
         p1.service_time=stoi(token);
         processes.push(p1);
+        info_processes.push_back(p1);
     }
 }
 void policies_pharsing(){
@@ -334,6 +424,10 @@ void policies_pharsing(){
         policies.push_back(temp);
     }
 }
+void initialise_finish_times(){
+for (int i=0;i<no_processes;i++)
+    finish_times.push_back(-1);
+}
 int main()
 {
     string temp;
@@ -341,6 +435,7 @@ int main()
     policies_pharsing();
     cin >> last_instance;
     cin >> no_processes;
+    initialise_finish_times();
     process_parsing();
     for(int i=0;i<policies.size();i++){
         process_trace_mapper.clear();
@@ -348,7 +443,10 @@ int main()
         if(policies[i][0]==2 || policies[i][0]==7)
             second_parameter=policies[i][1];
         policy_selector(policies[i][0]);
-        trace_printer();
+        if(visual_choice=="trace")
+            trace_printer();
+       else if(visual_choice=="stats")
+            stats_printer();
     }
 
     return 0;
