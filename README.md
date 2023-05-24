@@ -21,11 +21,11 @@ Various process scheduling techniques are simulated including:
 ## Getting Started
 
 ### Prerequisites 
-
+C++ wordeditior with it's compiler (ex. Vscode)
 
 ### Installing
-
-
+Install the repo content to a suitable location
+Extract the file content 
 
 ### Executing program
 
