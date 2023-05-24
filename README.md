@@ -13,10 +13,10 @@
 * [Acknowledgments](#acknowledgments)
 
 ## Description
-
+This C++ file simulates various process schduling technqiues and outputs the sequence of file excution of the processes 
 
 ## Features
-
+Various process scheduling techniques are simulated including:
 
 ## Getting Started
 
