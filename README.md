@@ -28,10 +28,5 @@ Install the repo content to a suitable location
 Extract the file content 
 
 ### Executing program
+run the make file
 
-
-## Author
-
-
-
-## Acknowledgments
